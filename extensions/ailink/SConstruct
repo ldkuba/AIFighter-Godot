@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+import os
+import sys
+import subprocess
+
+env = SConscript("../../godot-cpp/SConstruct")
+
+# For reference:
+# - CCFLAGS are compilation flags shared between C and C++
+# - CFLAGS are for C-specific compilation flags
+# - CXXFLAGS are for C++-specific compilation flags
+# - CPPFLAGS are for pre-processor flags
+# - CPPDEFINES are for pre-processor defines
+# - LINKFLAGS are for linking flags
+
+schema_path = ARGUMENTS.get("schema_path", "")
+schema_sources = Glob("{}/*.fbs".format(schema_path))
+
+root_path = os.path.curdir
+flatc_exec_path = os.path.abspath(os.path.join(root_path, 'libs/flatbuffers/bin/flatc.exe'))
+for source in schema_sources:
+    print("Compiling schema: {}".format(source.path))
+    subprocess.run([flatc_exec_path, "--cpp", "-o", "./src/schema_compiled/", source.path], shell=True)
+
+# tweak this if you want to use different folders, or more folders, to store your source code in.
+env.Append(CPPPATH=["src/", "libs/flatbuffers/include"])
+sources = Glob("src/*.cpp")
+
+env.Append(LIBPATH=["libs"])
+
+if env["platform"] == "macos":
+    library = env.SharedLibrary(
+        "bin/libailink.{}.{}.framework/libailink.{}.{}".format(
+            env["platform"], env["target"], env["platform"], env["target"]
+        ),
+        source=sources
+    )
+else:
+    library = env.SharedLibrary(
+        "bin/libailink{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+        source=sources
+    )
+
+Default(library)
