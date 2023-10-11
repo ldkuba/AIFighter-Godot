@@ -15,101 +15,32 @@ static_assert(FLATBUFFERS_VERSION_MAJOR == 23 &&
 
 namespace CubesExample {
 
-struct Vec3;
+struct Vector2;
 
-struct Monster;
-struct MonsterBuilder;
+struct Ray;
 
-enum Color : int8_t {
-  Color_Red = 1,
-  Color_Green = 2,
-  Color_Blue = 3,
-  Color_MIN = Color_Red,
-  Color_MAX = Color_Blue
-};
+struct SetupMessage;
+struct SetupMessageBuilder;
 
-inline const Color (&EnumValuesColor())[3] {
-  static const Color values[] = {
-    Color_Red,
-    Color_Green,
-    Color_Blue
-  };
-  return values;
-}
+struct InputMessage;
+struct InputMessageBuilder;
 
-inline const char * const *EnumNamesColor() {
-  static const char * const names[4] = {
-    "Red",
-    "Green",
-    "Blue",
-    nullptr
-  };
-  return names;
-}
+struct OutputMessage;
+struct OutputMessageBuilder;
 
-inline const char *EnumNameColor(Color e) {
-  if (::flatbuffers::IsOutRange(e, Color_Red, Color_Blue)) return "";
-  const size_t index = static_cast<size_t>(e) - static_cast<size_t>(Color_Red);
-  return EnumNamesColor()[index];
-}
-
-enum Any : uint8_t {
-  Any_NONE = 0,
-  Any_Monster = 1,
-  Any_MIN = Any_NONE,
-  Any_MAX = Any_Monster
-};
-
-inline const Any (&EnumValuesAny())[2] {
-  static const Any values[] = {
-    Any_NONE,
-    Any_Monster
-  };
-  return values;
-}
-
-inline const char * const *EnumNamesAny() {
-  static const char * const names[3] = {
-    "NONE",
-    "Monster",
-    nullptr
-  };
-  return names;
-}
-
-inline const char *EnumNameAny(Any e) {
-  if (::flatbuffers::IsOutRange(e, Any_NONE, Any_Monster)) return "";
-  const size_t index = static_cast<size_t>(e);
-  return EnumNamesAny()[index];
-}
-
-template<typename T> struct AnyTraits {
-  static const Any enum_value = Any_NONE;
-};
-
-template<> struct AnyTraits<CubesExample::Monster> {
-  static const Any enum_value = Any_Monster;
-};
-
-bool VerifyAny(::flatbuffers::Verifier &verifier, const void *obj, Any type);
-bool VerifyAnyVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types);
-
-FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
+FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Vector2 FLATBUFFERS_FINAL_CLASS {
  private:
   float x_;
   float y_;
-  float z_;
 
  public:
-  Vec3()
+  Vector2()
       : x_(0),
-        y_(0),
-        z_(0) {
+        y_(0) {
   }
-  Vec3(float _x, float _y, float _z)
+  Vector2(float _x, float _y)
       : x_(::flatbuffers::EndianScalar(_x)),
-        y_(::flatbuffers::EndianScalar(_y)),
-        z_(::flatbuffers::EndianScalar(_z)) {
+        y_(::flatbuffers::EndianScalar(_y)) {
   }
   float x() const {
     return ::flatbuffers::EndianScalar(x_);
@@ -117,210 +48,201 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
   float y() const {
     return ::flatbuffers::EndianScalar(y_);
   }
-  float z() const {
-    return ::flatbuffers::EndianScalar(z_);
+};
+FLATBUFFERS_STRUCT_END(Vector2, 8);
+
+FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Ray FLATBUFFERS_FINAL_CLASS {
+ private:
+  float distance_;
+  uint8_t enemy_;
+  int8_t padding0__;  int16_t padding1__;
+
+ public:
+  Ray()
+      : distance_(0),
+        enemy_(0),
+        padding0__(0),
+        padding1__(0) {
+    (void)padding0__;
+    (void)padding1__;
+  }
+  Ray(float _distance, bool _enemy)
+      : distance_(::flatbuffers::EndianScalar(_distance)),
+        enemy_(::flatbuffers::EndianScalar(static_cast<uint8_t>(_enemy))),
+        padding0__(0),
+        padding1__(0) {
+    (void)padding0__;
+    (void)padding1__;
+  }
+  float distance() const {
+    return ::flatbuffers::EndianScalar(distance_);
+  }
+  bool enemy() const {
+    return ::flatbuffers::EndianScalar(enemy_) != 0;
   }
 };
-FLATBUFFERS_STRUCT_END(Vec3, 12);
+FLATBUFFERS_STRUCT_END(Ray, 8);
 
-struct Monster FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef MonsterBuilder Builder;
+struct SetupMessage FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef SetupMessageBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_POS = 4,
-    VT_MANA = 6,
-    VT_HP = 8,
-    VT_NAME = 10,
-    VT_INVENTORY = 14,
-    VT_COLOR = 16,
-    VT_TEST_TYPE = 18,
-    VT_TEST = 20
+    VT_IS_HUNTER = 4
   };
-  const CubesExample::Vec3 *pos() const {
-    return GetStruct<const CubesExample::Vec3 *>(VT_POS);
-  }
-  int16_t mana() const {
-    return GetField<int16_t>(VT_MANA, 150);
-  }
-  int16_t hp() const {
-    return GetField<int16_t>(VT_HP, 100);
-  }
-  const ::flatbuffers::String *name() const {
-    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
-  }
-  const ::flatbuffers::Vector<uint8_t> *inventory() const {
-    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_INVENTORY);
-  }
-  CubesExample::Color color() const {
-    return static_cast<CubesExample::Color>(GetField<int8_t>(VT_COLOR, 3));
-  }
-  CubesExample::Any test_type() const {
-    return static_cast<CubesExample::Any>(GetField<uint8_t>(VT_TEST_TYPE, 0));
-  }
-  const void *test() const {
-    return GetPointer<const void *>(VT_TEST);
-  }
-  template<typename T> const T *test_as() const;
-  const CubesExample::Monster *test_as_Monster() const {
-    return test_type() == CubesExample::Any_Monster ? static_cast<const CubesExample::Monster *>(test()) : nullptr;
+  bool is_hunter() const {
+    return GetField<uint8_t>(VT_IS_HUNTER, 0) != 0;
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<CubesExample::Vec3>(verifier, VT_POS, 4) &&
-           VerifyField<int16_t>(verifier, VT_MANA, 2) &&
-           VerifyField<int16_t>(verifier, VT_HP, 2) &&
-           VerifyOffset(verifier, VT_NAME) &&
-           verifier.VerifyString(name()) &&
-           VerifyOffset(verifier, VT_INVENTORY) &&
-           verifier.VerifyVector(inventory()) &&
-           VerifyField<int8_t>(verifier, VT_COLOR, 1) &&
-           VerifyField<uint8_t>(verifier, VT_TEST_TYPE, 1) &&
-           VerifyOffset(verifier, VT_TEST) &&
-           VerifyAny(verifier, test(), test_type()) &&
+           VerifyField<uint8_t>(verifier, VT_IS_HUNTER, 1) &&
            verifier.EndTable();
   }
 };
 
-template<> inline const CubesExample::Monster *Monster::test_as<CubesExample::Monster>() const {
-  return test_as_Monster();
-}
-
-struct MonsterBuilder {
-  typedef Monster Table;
+struct SetupMessageBuilder {
+  typedef SetupMessage Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_pos(const CubesExample::Vec3 *pos) {
-    fbb_.AddStruct(Monster::VT_POS, pos);
+  void add_is_hunter(bool is_hunter) {
+    fbb_.AddElement<uint8_t>(SetupMessage::VT_IS_HUNTER, static_cast<uint8_t>(is_hunter), 0);
   }
-  void add_mana(int16_t mana) {
-    fbb_.AddElement<int16_t>(Monster::VT_MANA, mana, 150);
-  }
-  void add_hp(int16_t hp) {
-    fbb_.AddElement<int16_t>(Monster::VT_HP, hp, 100);
-  }
-  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
-    fbb_.AddOffset(Monster::VT_NAME, name);
-  }
-  void add_inventory(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> inventory) {
-    fbb_.AddOffset(Monster::VT_INVENTORY, inventory);
-  }
-  void add_color(CubesExample::Color color) {
-    fbb_.AddElement<int8_t>(Monster::VT_COLOR, static_cast<int8_t>(color), 3);
-  }
-  void add_test_type(CubesExample::Any test_type) {
-    fbb_.AddElement<uint8_t>(Monster::VT_TEST_TYPE, static_cast<uint8_t>(test_type), 0);
-  }
-  void add_test(::flatbuffers::Offset<void> test) {
-    fbb_.AddOffset(Monster::VT_TEST, test);
-  }
-  explicit MonsterBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit SetupMessageBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<Monster> Finish() {
+  ::flatbuffers::Offset<SetupMessage> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<Monster>(end);
+    auto o = ::flatbuffers::Offset<SetupMessage>(end);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<Monster> CreateMonster(
+inline ::flatbuffers::Offset<SetupMessage> CreateSetupMessage(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    const CubesExample::Vec3 *pos = nullptr,
-    int16_t mana = 150,
-    int16_t hp = 100,
-    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> inventory = 0,
-    CubesExample::Color color = CubesExample::Color_Blue,
-    CubesExample::Any test_type = CubesExample::Any_NONE,
-    ::flatbuffers::Offset<void> test = 0) {
-  MonsterBuilder builder_(_fbb);
-  builder_.add_test(test);
-  builder_.add_inventory(inventory);
-  builder_.add_name(name);
-  builder_.add_pos(pos);
-  builder_.add_hp(hp);
-  builder_.add_mana(mana);
-  builder_.add_test_type(test_type);
-  builder_.add_color(color);
+    bool is_hunter = false) {
+  SetupMessageBuilder builder_(_fbb);
+  builder_.add_is_hunter(is_hunter);
   return builder_.Finish();
 }
 
-inline ::flatbuffers::Offset<Monster> CreateMonsterDirect(
+struct InputMessage FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef InputMessageBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_RAYS = 4
+  };
+  const ::flatbuffers::Vector<const CubesExample::Ray *> *rays() const {
+    return GetPointer<const ::flatbuffers::Vector<const CubesExample::Ray *> *>(VT_RAYS);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_RAYS) &&
+           verifier.VerifyVector(rays()) &&
+           verifier.EndTable();
+  }
+};
+
+struct InputMessageBuilder {
+  typedef InputMessage Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_rays(::flatbuffers::Offset<::flatbuffers::Vector<const CubesExample::Ray *>> rays) {
+    fbb_.AddOffset(InputMessage::VT_RAYS, rays);
+  }
+  explicit InputMessageBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<InputMessage> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<InputMessage>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<InputMessage> CreateInputMessage(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    const CubesExample::Vec3 *pos = nullptr,
-    int16_t mana = 150,
-    int16_t hp = 100,
-    const char *name = nullptr,
-    const std::vector<uint8_t> *inventory = nullptr,
-    CubesExample::Color color = CubesExample::Color_Blue,
-    CubesExample::Any test_type = CubesExample::Any_NONE,
-    ::flatbuffers::Offset<void> test = 0) {
-  auto name__ = name ? _fbb.CreateString(name) : 0;
-  auto inventory__ = inventory ? _fbb.CreateVector<uint8_t>(*inventory) : 0;
-  return CubesExample::CreateMonster(
+    ::flatbuffers::Offset<::flatbuffers::Vector<const CubesExample::Ray *>> rays = 0) {
+  InputMessageBuilder builder_(_fbb);
+  builder_.add_rays(rays);
+  return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<InputMessage> CreateInputMessageDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<CubesExample::Ray> *rays = nullptr) {
+  auto rays__ = rays ? _fbb.CreateVectorOfStructs<CubesExample::Ray>(*rays) : 0;
+  return CubesExample::CreateInputMessage(
       _fbb,
-      pos,
-      mana,
-      hp,
-      name__,
-      inventory__,
-      color,
-      test_type,
-      test);
+      rays__);
 }
 
-inline bool VerifyAny(::flatbuffers::Verifier &verifier, const void *obj, Any type) {
-  switch (type) {
-    case Any_NONE: {
-      return true;
-    }
-    case Any_Monster: {
-      auto ptr = reinterpret_cast<const CubesExample::Monster *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    default: return true;
+struct OutputMessage FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef OutputMessageBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_MOVEMENT_DIRECTION = 4
+  };
+  const CubesExample::Vector2 *movement_direction() const {
+    return GetStruct<const CubesExample::Vector2 *>(VT_MOVEMENT_DIRECTION);
   }
-}
-
-inline bool VerifyAnyVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types) {
-  if (!values || !types) return !values && !types;
-  if (values->size() != types->size()) return false;
-  for (::flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
-    if (!VerifyAny(
-        verifier,  values->Get(i), types->GetEnum<Any>(i))) {
-      return false;
-    }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<CubesExample::Vector2>(verifier, VT_MOVEMENT_DIRECTION, 4) &&
+           verifier.EndTable();
   }
-  return true;
+};
+
+struct OutputMessageBuilder {
+  typedef OutputMessage Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_movement_direction(const CubesExample::Vector2 *movement_direction) {
+    fbb_.AddStruct(OutputMessage::VT_MOVEMENT_DIRECTION, movement_direction);
+  }
+  explicit OutputMessageBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<OutputMessage> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<OutputMessage>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<OutputMessage> CreateOutputMessage(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const CubesExample::Vector2 *movement_direction = nullptr) {
+  OutputMessageBuilder builder_(_fbb);
+  builder_.add_movement_direction(movement_direction);
+  return builder_.Finish();
 }
 
-inline const CubesExample::Monster *GetMonster(const void *buf) {
-  return ::flatbuffers::GetRoot<CubesExample::Monster>(buf);
+inline const CubesExample::SetupMessage *GetSetupMessage(const void *buf) {
+  return ::flatbuffers::GetRoot<CubesExample::SetupMessage>(buf);
 }
 
-inline const CubesExample::Monster *GetSizePrefixedMonster(const void *buf) {
-  return ::flatbuffers::GetSizePrefixedRoot<CubesExample::Monster>(buf);
+inline const CubesExample::SetupMessage *GetSizePrefixedSetupMessage(const void *buf) {
+  return ::flatbuffers::GetSizePrefixedRoot<CubesExample::SetupMessage>(buf);
 }
 
-inline bool VerifyMonsterBuffer(
+inline bool VerifySetupMessageBuffer(
     ::flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<CubesExample::Monster>(nullptr);
+  return verifier.VerifyBuffer<CubesExample::SetupMessage>(nullptr);
 }
 
-inline bool VerifySizePrefixedMonsterBuffer(
+inline bool VerifySizePrefixedSetupMessageBuffer(
     ::flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<CubesExample::Monster>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<CubesExample::SetupMessage>(nullptr);
 }
 
-inline void FinishMonsterBuffer(
+inline void FinishSetupMessageBuffer(
     ::flatbuffers::FlatBufferBuilder &fbb,
-    ::flatbuffers::Offset<CubesExample::Monster> root) {
+    ::flatbuffers::Offset<CubesExample::SetupMessage> root) {
   fbb.Finish(root);
 }
 
-inline void FinishSizePrefixedMonsterBuffer(
+inline void FinishSizePrefixedSetupMessageBuffer(
     ::flatbuffers::FlatBufferBuilder &fbb,
-    ::flatbuffers::Offset<CubesExample::Monster> root) {
+    ::flatbuffers::Offset<CubesExample::SetupMessage> root) {
   fbb.FinishSizePrefixed(root);
 }
 

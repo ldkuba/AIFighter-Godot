@@ -14,6 +14,7 @@ env = SConscript("../../godot-cpp/SConstruct")
 # - LINKFLAGS are for linking flags
 
 schema_path = ARGUMENTS.get("schema_path", "")
+only_schema = ARGUMENTS.get("fb", False)
 schema_sources = Glob("{}/*.fbs".format(schema_path))
 
 root_path = os.path.curdir
@@ -21,6 +22,9 @@ flatc_exec_path = os.path.abspath(os.path.join(root_path, 'libs/flatbuffers/bin/
 for source in schema_sources:
     print("Compiling schema: {}".format(source.path))
     subprocess.run([flatc_exec_path, "--cpp", "-o", "./src/schema_compiled/", source.path], shell=True)
+
+if only_schema:
+    Exit(0)
 
 # tweak this if you want to use different folders, or more folders, to store your source code in.
 env.Append(CPPPATH=["src/", "libs/flatbuffers/include"])
